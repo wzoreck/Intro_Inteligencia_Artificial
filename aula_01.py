@@ -202,7 +202,294 @@ with open('credit.pkl', mode='wb') as f:
     pickle.dump([X_credit_treinamento, X_credit_teste, Y_credit_treinamento, Y_credit_teste], f)
 
 
+#######################################################################
+#Aula 04
+
+# Naive Bayes (Algoritmo problabilistico)
+from sklearn.naive_bayes import GaussianNB
+
+base_risco_credito = pd.read_csv('risco_credito.csv')
+ 
+X_risco_credito = base_risco_credito.iloc[:, 0:4].values # X indica um vetor, x indica um vetor
+y_risco_credito = base_risco_credito.iloc[:, 4].values # Nesse caso um vetor
+
+from sklearn.preprocessing import LabelEncoder
+label_encoder_risco = LabelEncoder()
+
+indices_risco = [0, 1, 2, 3]
+
+for i in indices_risco:
+    X_risco_credito[:, i] = label_encoder_risco.fit_transform(X_risco_credito[:, i])
+
+import pickle
+
+with open('risco_credito.pkl', 'wb') as f:
+    pickle.dump([X_risco_credito, y_risco_credito], f)
+
+naive_risco_credito = GaussianNB()
+
+# ML Aprendendo
+naive_risco_credito.fit(X_risco_credito, y_risco_credito)
+
+# história: Boa (0), dívida: alta (0), garantias: nenhuma (1), renda: > 35 (2)
+
+# história: Ruim (2), dívida: alta (0), garantias: adequada (0), renda: < 15 (0)
+
+previsao = naive_risco_credito.predict([[0, 0, 1, 2], [2, 0, 0, 0]]) # Passsando uma matriz
+
+previsao
+
+################################################ Aplicando IA nas bases credit_data
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, y_credit_teste = pickle.load(f)
     
+# Ver se X e y tem a mesma qtd de dados
+X_credit_treinamento.shape, y_credit_treinamento.shape
+
+X_credit_teste.shape, Y_credit_teste.shape
+
+naive_credit = GaussianNB()
+
+    #ML
+naive_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes_credit = naive_credit.predict(X_credit_teste)
+
+# Teste do algoritmo treinado
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+accuracy_score(y_credit_teste, previsoes_credit)
+
+confusion_matrix(y_credit_teste, previsoes_credit)
+
+# NO terminal instalar (pip install yellowbrick)
+
+from yellowbrick.classifier import ConfusionMatrix
+
+cm = ConfusionMatrix(naive_credit)
+cm.fit(X_credit_treinamento, y_credit_treinamento)
+cm.score(X_credit_teste, y_credit_teste)
+
+print(classification_report(y_credit_teste, previsoes_credit))
+
+
+##################### base census
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+
+X_census_treinamento.shape, y_census_treinamento.shape
+X_census_teste.shape, y_census_teste.shape
+
+naive_census = GaussianNB()
+naive_census.fit(X_census_treinamento, y_census_treinamento)
+
+previsoes_census = naive_census.predict(X_census_teste)
+   
+accuracy_score(y_census_teste, previsoes_census)
+
+cm = ConfusionMatrix(naive_census) # Fazer ainda em casa...
+
+
+##########################################################################################################
+#Aula 05 - Arvore de decisao
+
+from sklearn.tree import DecisionTreeClassifier
+
+# Base de dados crédito
+import pickle
+
+with open('risco_credito.pkl', 'rb') as f:
+    X_risco_credito, y_risco_credito = pickle.load(f)
+
+arvore_rico_credito = DecisionTreeClassifier(criterion='entropy')
+
+arvore_rico_credito.fit(X_risco_credito, y_risco_credito)
+
+arvore_rico_credito.feature_importances_ # MOstra uais atributos tem mais importancia (qual elege como nó)
+
+arvore_rico_credito.classes_
+
+previsao = arvore_rico_credito.predict([[0, 0, 1, 2], [2, 0, 0, 0]])
+
+from sklearn import tree
+previsores = ['história', 'dívida', 'garantias', 'renda']
+figura, eixos = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+tree.plot_tree(arvore_rico_credito, feature_names=previsores, class_names=arvore_rico_credito.classes_, filled=True)
+
+figura.savefig('risco_credito_tree.pdf')
+
+#################### Base credit data
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+
+
+arvore_credit = DecisionTreeClassifier(criterion='entropy')
+
+arvore_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes = arvore_credit.predict(X_credit_teste)
+
+# Avaliacao
+from sklearn.metrics import accuracy_score, classification_report
+
+accuracy_score(Y_credit_teste, previsoes)
+
+previsores = ['income', 'age', 'loan']
+
+figura2, eixos = plt.subplots(nrows=1, ncols=1, figsize=(20, 20))
+tree.plot_tree(arvore_credit, feature_names=previsores, class_names=['0','1'], filled=True)
+
+figura2.savefig('teste.pdf')
+
+########################## Base Census
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+
+arvore_census = DecisionTreeClassifier(criterion='entropy')
+
+arvore_census.fit(X_census_treinamento, y_census_treinamento)
+
+previsoes = arvore_census.predict(X_census_teste)
+
+accuracy_score(y_census_teste, previsoes)
+
+
+
+from yellowbrick.classifier import ConfusionMatrix
+
+cm = ConfusionMatrix(arvore_census)
+cm.fit(X_census_treinamento, y_census_treinamento)
+cm.score(X_census_teste, y_census_teste)
+
+print(classification_report(y_census_teste, previsoes))
+
+######################### RANDOM FOREST ###############################
+from sklearn.ensemble import RandomForestClassifier
+
+# Base credit data
+
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+
+
+random_forest_credit = RandomForestClassifier(n_estimators=40, criterion='entropy', random_state=0)
+
+random_forest_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes = random_forest_credit.predict(X_credit_teste)
+
+accuracy_score(Y_credit_teste, previsoes)
+
+print(classification_report(Y_credit_teste, previsoes))
+
+# Base census
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+
+
+random_forest_census = RandomForestClassifier(n_estimators=100000, criterion='entropy', random_state=0)
+random_forest_census.fit(X_census_treinamento, y_census_treinamento)
+previsoes = random_forest_census.predict(X_census_teste)
+accuracy_score(y_census_teste, previsoes)
+print(classification_report(y_census_teste, previsoes))
+
+
+################################# AULA 06 (KNN) #################################
+from sklearn.neighbors import KNeighborsClassifier
+
+import pickle
+
+# Base credit data
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+    
+knn_credit = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2)
+knn_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes = knn_credit.predict(X_credit_teste)
+
+
+from sklearn.metrics import accuracy_score, classification_report
+accuracy_score(Y_credit_teste, previsoes)
+print(classification_report(Y_credit_teste, previsoes))
+
+
+
+# Base census
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+    
+knn_census = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2)
+knn_census.fit(X_census_treinamento, y_census_treinamento)
+
+previsoes = knn_census.predict(X_census_teste)
+
+accuracy_score(y_census_teste, previsoes)
+print(classification_report(y_census_teste, previsoes))
+
+######################## SVM ########################
+from sklearn.svm import SVC
+
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+    
+svm_credit = SVC(C=5, kernel='rbf') # Se atentar ao parametro C
+svm_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes = svm_credit.predict(X_credit_teste)
+
+
+from sklearn.metrics import accuracy_score, classification_report
+accuracy_score(Y_credit_teste, previsoes)
+print(classification_report(Y_credit_teste, previsoes))
+
+#
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+    
+svm_census = SVC(C=5, kernel='rbf') # Se atentar ao parametro C
+svm_census.fit(X_census_treinamento, y_census_treinamento)
+
+previsoes = svm_census.predict(X_census_teste)
+
+
+from sklearn.metrics import accuracy_score, classification_report
+accuracy_score(y_census_teste, previsoes)
+print(classification_report(Y_census_teste, previsoes))
+
+
+################################### REDE NEURAL ###################################
+from sklearn.neural_network import MLPClassifier
+
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+    
+rede_neural_credit = MLPClassifier(max_iter=1000, verbose=True)
+rede_neural_credit.fit(X_credit_treinamento, y_credit_treinamento)
+
+previsoes = rede_neural_credit.predict(X_credit_teste)
+
+
+from sklearn.metrics import accuracy_score, classification_report
+accuracy_score(Y_credit_teste, previsoes)
+print(classification_report(Y_credit_teste, previsoes))
+
+#
+with open('census.pkl', 'rb') as f:
+    X_census_treinamento, X_census_teste, y_census_treinamento, y_census_teste = pickle.load(f)
+    
+rede_neural_census = MLPClassifier(max_iter=1000, verbose=True)
+rede_neural_census.fit(X_census_treinamento, y_census_treinamento)
+
+previsoes = rede_neural_census.predict(X_census_teste)
+
+
+from sklearn.metrics import accuracy_score, classification_report
+accuracy_score(y_census_teste, previsoes)
+print(classification_report(Y_census_teste, previsoes))
+
+
+## Trabalho: Mecher na base, pre processamento, usar todos os algoritmos e fazer um gráfico com os resultados -> Para proxima aula
 
 
 
