@@ -401,7 +401,7 @@ import pickle
 
 # Base credit data
 with open('credit.pkl', 'rb') as f:
-    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, y_credit_teste = pickle.load(f)
     
 knn_credit = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2)
 knn_credit.fit(X_credit_treinamento, y_credit_treinamento)
@@ -462,7 +462,7 @@ print(classification_report(Y_census_teste, previsoes))
 from sklearn.neural_network import MLPClassifier
 
 with open('credit.pkl', 'rb') as f:
-    X_credit_treinamento, X_credit_teste, y_credit_treinamento, Y_credit_teste = pickle.load(f)
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, y_credit_teste = pickle.load(f)
     
 rede_neural_credit = MLPClassifier(max_iter=1000, verbose=True)
 rede_neural_credit.fit(X_credit_treinamento, y_credit_treinamento)
@@ -493,6 +493,89 @@ print(classification_report(Y_census_teste, previsoes))
 
 
 
+################################################ AULA 07 #####################################
+# GRIDSEARCH (Testar os algoritmos com vários parametor) (Pode melhorar um pouco na precisão)
+# TUNING de algorítmos
+
+# Validação cruzada, cobre toda a base de dados na questão de treinamento e teste
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+
+
+import pickle
+
+
+with open('credit.pkl', 'rb') as f:
+    X_credit_treinamento, X_credit_teste, y_credit_treinamento, y_credit_teste = pickle.load(f)
+
+X_credit = np.concatenate((X_credit_teste, X_credit_teste), axis=0)
+
+y_credit = np.concatenate((y_credit_teste, y_credit_teste), axis=0)
+
+
+## Arvore de decisao
+DecisionTreeClassifier()
+parametros = {'criterion': ['gini', 'entropy'],
+              'splitter': ['best', 'random'],
+              'min_samples_split': [2, 5, 10],
+              'min_samples_leaf': [1, 5, 10]}
+
+grid_search = GridSearchCV(estimator=DecisionTreeClassifier(), param_grid=parametros)
+grid_search.fit(X_credit, y_credit)
+
+melhores_resultados = grid_search.best_score_
+melhores_parametros = grid_search.best_params_
+
+
+## Random Forest
+parametros = {'criterion': ['gini', 'entropy'],
+              'n_estimators': [10, 40, 100, 150, 1000],
+              'min_samples_split': [2, 5, 10],
+              'min_samples_leaf': [1, 5, 10]}
+
+grid_search = GridSearchCV(estimator=RandomForestClassifier(), param_grid=parametros)
+grid_search.fit(X_credit, y_credit)
+
+melhores_resultados = grid_search.best_score_
+melhores_parametros = grid_search.best_params_
+
+
+## KNN
+parametros = {'n_neighbors': [3, 5, 10 20],
+              'p': [1, 2]}
+ 
+grid_search = GridSearchCV(estimator=KNeighborsClassifier(), param_grid=parametros)
+grid_search.fit(X_credit, y_credit)
+
+melhores_resultados = grid_search.best_score_
+melhores_parametros = grid_search.best_params_
+
+## SVM
+parametros = {'tol': [0.001, 0.0001, 0.00001],
+              'C': [1, 1.5, 2],
+              'kernel': ['rbf', 'linear', 'poly', 'sigmoid']}
+ 
+grid_search = GridSearchCV(estimator=SVC(), param_grid=parametros)
+grid_search.fit(X_credit, y_credit)
+
+melhores_resultados = grid_search.best_score_
+melhores_parametros = grid_search.best_params_
+
+## REDES Neurais
+parametros = {'activation': ['relu', 'logistic', 'tahn'],
+              'solver': ['adam', 'sgd'],
+              'batch_size': [10, 60]}
+ 
+grid_search = GridSearchCV(estimator=MLPClassifier(), param_grid=parametros)
+grid_search.fit(X_credit, y_credit)
+
+melhores_resultados = grid_search.best_score_
+melhores_parametros = grid_search.best_params_
 
 
 
